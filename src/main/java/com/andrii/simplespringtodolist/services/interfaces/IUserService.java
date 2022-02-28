@@ -1,11 +1,15 @@
 package com.andrii.simplespringtodolist.services.interfaces;
 
+import com.andrii.simplespringtodolist.domain.PlainObjects.PlainObjects.UserPojo;
 import com.andrii.simplespringtodolist.domain.User;
 
+import java.util.List;
+
 public interface IUserService {
-    int createUser(User user);
-    User getUser(long id);
-    int updateUser(User user, long id);
-    int deleteUser(long id);
-    void createTableUser();
+    UserPojo createUser(User user);
+    UserPojo getUser(long id);
+    List<UserPojo> getAllUsers();
+    UserPojo updateUser(User userUpdated, long id);
+    UserPojo deleteUser(long id);
+
 }

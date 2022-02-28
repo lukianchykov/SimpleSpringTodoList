@@ -1,52 +1,70 @@
 package com.andrii.simplespringtodolist.services;
 
+import com.andrii.simplespringtodolist.domain.PlainObjects.PlainObjects.UserPojo;
 import com.andrii.simplespringtodolist.domain.User;
 import com.andrii.simplespringtodolist.services.interfaces.IUserService;
+import com.andrii.simplespringtodolist.utils.Converter;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.BeanPropertyRowMapper;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService implements IUserService {
 
-    private final JdbcTemplate jdbcTemplate;
+    @PersistenceContext
+    EntityManager entityManager;
+
+    private final Converter converter;
 
     @Autowired
-    public UserService(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
-    }
-
-    public void createTableUser() {
-        jdbcTemplate.execute("DROP TABLE IF EXISTS Users");
-        jdbcTemplate.execute("CREATE TABLE Users(Id LONG, Email VARCHAR(30), Password VARCHAR(30))");
+    public UserService(Converter converter) {
+        this.converter = converter;
     }
 
     @Override
-    public int createUser(User user) {
-        String query = "INSERT INTO Users VALUES(" + user.getId() + ",'" + user.getEmail() + "','" + user.getPassword() + "')";
-        int result = jdbcTemplate.update(query);
+    @Transactional
+    public UserPojo createUser(User user) {
+
+        entityManager.persist(user);
+
+        return converter.userToPojo(user);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserPojo getUser(long id) {
+
+        User foundUser = entityManager
+                .createQuery("SELECT user FROM User user WHERE user.id = :id", User.class)
+                .setParameter("id", id)
+                .getSingleResult();
+
+        return converter.userToPojo(foundUser);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserPojo> getAllUsers() {
+        List<User> listOfUsers= entityManager.createQuery("SELECT user FROM User user", User.class).getResultList();
+
+        List<UserPojo> result = listOfUsers.stream().map(user -> converter.userToPojo(user)).collect(Collectors.toList());
         return result;
     }
 
     @Override
-    public User getUser(long id) {
-        String query = "SELECT * FROM Users WHERE Id=?";
-        User foundUser = jdbcTemplate.queryForObject(query, new Object[]{id}, new BeanPropertyRowMapper<>(User.class));
-        return foundUser;
+    public UserPojo updateUser(User updatedUser, long id) {
+
+        return null;
     }
 
     @Override
-    public int updateUser(User updatedUser, long id) {
-        String query = "UPDATE Users SET Email='" + updatedUser.getEmail() + "', password='" + updatedUser.getPassword() + "' WHERE id=" + id;
-        int result = jdbcTemplate.update(query);
-        return result;
-    }
+    public UserPojo deleteUser(long id) {
 
-    @Override
-    public int deleteUser(long id) {
-        String query = "DELETE FROM Users WHERE Id=" + id;
-        int result = jdbcTemplate.update(query);
-        return result;
+        return null;
     }
 }
