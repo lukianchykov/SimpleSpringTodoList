@@ -2,35 +2,35 @@ package com.andrii.simplespringtodolist.services;
 
 import com.andrii.simplespringtodolist.domain.PlainObjects.PlainObjects.UserPojo;
 import com.andrii.simplespringtodolist.domain.User;
+import com.andrii.simplespringtodolist.repositories.UserRepository;
 import com.andrii.simplespringtodolist.services.interfaces.IUserService;
 import com.andrii.simplespringtodolist.utils.Converter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 public class UserService implements IUserService {
 
-    @PersistenceContext
-    EntityManager entityManager;
-
     private final Converter converter;
+    private final UserRepository userRepository;
 
     @Autowired
-    public UserService(Converter converter) {
+    public UserService(Converter converter,
+                       UserRepository userRepository) {
         this.converter = converter;
+        this.userRepository = userRepository;
     }
 
     @Override
     @Transactional
     public UserPojo createUser(User user) {
 
-        entityManager.persist(user);
+        userRepository.save(user);
 
         return converter.userToPojo(user);
     }
@@ -39,32 +39,47 @@ public class UserService implements IUserService {
     @Transactional(readOnly = true)
     public UserPojo getUser(long id) {
 
-        User foundUser = entityManager
-                .createQuery("SELECT user FROM User user WHERE user.id = :id", User.class)
-                .setParameter("id", id)
-                .getSingleResult();
+        Optional<User> foundUserOptional = userRepository.findById(id);
 
-        return converter.userToPojo(foundUser);
+        if (foundUserOptional.isPresent()) {
+            return converter.userToPojo(foundUserOptional.get());
+        } else {
+            return converter.userToPojo(new User());
+        }
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<UserPojo> getAllUsers() {
-        List<User> listOfUsers= entityManager.createQuery("SELECT user FROM User user", User.class).getResultList();
-
-        List<UserPojo> result = listOfUsers.stream().map(user -> converter.userToPojo(user)).collect(Collectors.toList());
-        return result;
+        List<User> listOfUsers = userRepository.findAll();
+        return listOfUsers.stream().map(converter::userToPojo).collect(Collectors.toList());
     }
 
     @Override
-    public UserPojo updateUser(User updatedUser, long id) {
-
-        return null;
+    @Transactional
+    public UserPojo updateUser(User source, long id) {
+        Optional<User> userForUpdateOptional = userRepository.findById(id);
+        if (userForUpdateOptional.isPresent()) {
+            User target = userForUpdateOptional.get();
+            target.setEmail(source.getEmail());
+            target.setPassword(source.getPassword());
+            userRepository.save(target);
+            return converter.userToPojo(target);
+        } else {
+            return converter.userToPojo(new User());
+        }
     }
 
     @Override
-    public UserPojo deleteUser(long id) {
+    @Transactional
+    public String deleteUser(long id) {
+        Optional<User> userForDeleteOptional = userRepository.findById(id);
 
-        return null;
+        if (userForDeleteOptional.isPresent()) {
+            userRepository.delete(userForDeleteOptional.get());
+            return "User with id:" + id + " was successfully removed";
+        } else {
+            return "User with id:" + id + " doesn't exist";
+        }
     }
 }
