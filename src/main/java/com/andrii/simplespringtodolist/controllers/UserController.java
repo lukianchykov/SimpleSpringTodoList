@@ -3,6 +3,8 @@ package com.andrii.simplespringtodolist.controllers;
 import com.andrii.simplespringtodolist.domain.PlainObjects.PlainObjects.UserPojo;
 import com.andrii.simplespringtodolist.domain.User;
 import com.andrii.simplespringtodolist.exception.CustomEmptyDataException;
+import com.andrii.simplespringtodolist.security.TokenManager;
+import com.andrii.simplespringtodolist.security.TokenPayload;
 import com.andrii.simplespringtodolist.services.interfaces.IUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -13,6 +15,7 @@ import org.springframework.util.ClassUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.sql.SQLException;
+import java.util.Calendar;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -20,44 +23,55 @@ import java.util.NoSuchElementException;
 public class UserController {
 
     private final IUserService userService;
+    private final TokenManager tokenManager;
 
     @Autowired
-    public UserController(IUserService userService) {
+    public UserController(IUserService userService, TokenManager tokenManager) {
         this.userService = userService;
+        this.tokenManager = tokenManager;
     }
 
     @PostMapping(path = "/registration")
     public ResponseEntity<UserPojo> createUser(@RequestBody User user) {
         UserPojo result = userService.createUser(user);
-        return new ResponseEntity(result, HttpStatus.OK);
+        return new ResponseEntity<>(result, HttpStatus.OK);
+    }
+
+    @PostMapping(path = "/authentication")
+    public ResponseEntity<String> authenticateUser(@RequestBody User user) {
+        UserPojo authenticatedUser = userService.findUserByEmailAndPassword(user.getEmail(), user.getPassword());
+
+        if(authenticatedUser == null) {
+            return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
+        }
+
+        String token = tokenManager.createToken(new TokenPayload(authenticatedUser.getId(), authenticatedUser.getEmail(), Calendar.getInstance().getTime()));
+
+        return new ResponseEntity<>(token, HttpStatus.OK);
     }
 
     @GetMapping(path = "/user/{id}")
     public ResponseEntity<UserPojo> getUser(@PathVariable Long id) {
         UserPojo result = userService.getUser(id);
-        return new ResponseEntity(result, HttpStatus.OK);
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     @GetMapping(path = "/users")
     public ResponseEntity<List<UserPojo>> getUser() {
         List<UserPojo> result = userService.getAllUsers();
-        return new ResponseEntity(result, HttpStatus.OK);
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     @PutMapping(path = "/user/{id}")
     public ResponseEntity<UserPojo> updateUser(@RequestBody User source, @PathVariable Long id) {
         UserPojo result = userService.updateUser(source, id);
-        return new ResponseEntity(result, HttpStatus.OK);
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     @DeleteMapping(path = "/user/{id}")
     public ResponseEntity<String> deleteUser (@PathVariable Long id) {
-        return new ResponseEntity(userService.deleteUser(id), HttpStatus.OK);
+        return new ResponseEntity<>(userService.deleteUser(id), HttpStatus.OK);
     }
-
-    /**
-     * Exception Handling
-     */
 
     /**
      * Exception handling

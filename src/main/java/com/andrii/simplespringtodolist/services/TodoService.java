@@ -61,18 +61,18 @@ public class TodoService implements ITodoService {
 
     @Override
     @Transactional
-    public TodoPojo getTodo(Long id) {
+    public TodoPojo getTodo(Long id, Long userId) {
         Optional<Todo> todoOptional = todoRepository.findById(id);
         if (todoOptional.isPresent()) {
             return converter.todoToPojo(todoOptional.get());
-        }else{
+        } else {
             throw new NoSuchElementException("unable to get todo");
         }
     }
 
     @Override
     @Transactional
-    public TodoPojo updateTodo(Todo source, Long todoId) {
+    public TodoPojo updateTodo(Todo source, Long todoId, Long userId) {
 
         Optional<Todo> targetOptional = todoRepository.findById(todoId);
 
@@ -96,7 +96,7 @@ public class TodoService implements ITodoService {
 
     @Override
     @Transactional
-    public String deleteTodo(Long id) {
+    public String deleteTodo(Long id, Long userId) {
 
         Optional<Todo> todoForDeleteOptional = todoRepository.findById(id);
         if(todoForDeleteOptional.isPresent()) {
@@ -104,7 +104,7 @@ public class TodoService implements ITodoService {
             new ArrayList<>(todoForDelete.getTagList()).forEach(tag -> tag.removeTodo(todoForDelete));
             todoRepository.delete(todoForDelete);
             return "Todo with id:" + id + " was successfully removed";
-        }else {
+        } else {
             throw new NoSuchElementException("unable to delete todo");
         }
     }
@@ -113,10 +113,10 @@ public class TodoService implements ITodoService {
     @Transactional
     public List<TodoPojo> getAllTodos(Long userId) {
         Optional<User> userOptional = userRepository.findById(userId);
-        if(userOptional.isPresent()) {
-            return userOptional.map(user -> todoRepository.findAllByUser(user).stream().map(converter::todoToPojo).collect(Collectors.toList())).orElseGet(ArrayList::new);
-        }else {
-            throw new NoSuchElementException("No user with id" + userId + "was found");
+        if (userOptional.isPresent()) {
+            return todoRepository.findAllByUser(userOptional.get()).stream().map(converter::todoToPojo).collect(Collectors.toList());
+        } else {
+            throw new NoSuchElementException("No user with id: " + userId + " was found");
         }
     }
 }
