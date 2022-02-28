@@ -2,6 +2,7 @@ package com.andrii.simplespringtodolist.services;
 
 import com.andrii.simplespringtodolist.domain.PlainObjects.PlainObjects.UserPojo;
 import com.andrii.simplespringtodolist.domain.User;
+import com.andrii.simplespringtodolist.exception.CustomEmptyDataException;
 import com.andrii.simplespringtodolist.repositories.UserRepository;
 import com.andrii.simplespringtodolist.services.interfaces.IUserService;
 import com.andrii.simplespringtodolist.utils.Converter;
@@ -40,12 +41,8 @@ public class UserService implements IUserService {
     public UserPojo getUser(long id) {
 
         Optional<User> foundUserOptional = userRepository.findById(id);
+        return converter.userToPojo(foundUserOptional.get());
 
-        if (foundUserOptional.isPresent()) {
-            return converter.userToPojo(foundUserOptional.get());
-        } else {
-            return converter.userToPojo(new User());
-        }
     }
 
     @Override
@@ -53,6 +50,7 @@ public class UserService implements IUserService {
     public List<UserPojo> getAllUsers() {
         List<User> listOfUsers = userRepository.findAll();
         return listOfUsers.stream().map(converter::userToPojo).collect(Collectors.toList());
+
     }
 
     @Override
@@ -66,7 +64,7 @@ public class UserService implements IUserService {
             userRepository.save(target);
             return converter.userToPojo(target);
         } else {
-            return converter.userToPojo(new User());
+            throw new CustomEmptyDataException("unable to update user");
         }
     }
 
@@ -77,9 +75,9 @@ public class UserService implements IUserService {
 
         if (userForDeleteOptional.isPresent()) {
             userRepository.delete(userForDeleteOptional.get());
-            return "User with id:" + id + " was successfully removed";
+            return "User with id:" + id + " was successfully remover";
         } else {
-            return "User with id:" + id + " doesn't exist";
+            throw new CustomEmptyDataException("unable to delete user");
         }
     }
 }

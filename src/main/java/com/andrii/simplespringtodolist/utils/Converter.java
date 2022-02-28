@@ -20,7 +20,7 @@ public class Converter {
         result.setEmail(source.getEmail());
         result.setPassword(source.getPassword());
 
-        result.setTodoList(source.getTodoList().stream().map(todo -> todoToPojo(todo)).collect(Collectors.toSet()));
+        result.setTodoList(source.getTodoList().stream().map(this::todoToPojo).collect(Collectors.toSet()));
 
         return result;
     }
@@ -38,7 +38,7 @@ public class Converter {
         result.setPriority(source.getPriority());
         result.setUserId(source.getUser().getId());
 
-        result.setTagList(source.getTagList().stream().map(tag -> tagToPojo(tag)).collect(Collectors.toSet()));
+        result.setTagList(source.getTagList().stream().map(this::tagToPojo).collect(Collectors.toSet()));
 
         return result;
     }
@@ -48,7 +48,7 @@ public class Converter {
 
         result.setId(source.getId());
         result.setName(source.getName());
-        result.setTodoListIds(source.getTodoList().stream().map(todo -> todo.getId()).collect(Collectors.toSet()));
+        result.setTodoListIds(source.getTodoList().stream().map(Todo::getId).collect(Collectors.toSet()));
 
         return result;
     }

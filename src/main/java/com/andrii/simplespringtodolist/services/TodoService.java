@@ -4,6 +4,7 @@ import com.andrii.simplespringtodolist.domain.PlainObjects.PlainObjects.TodoPojo
 import com.andrii.simplespringtodolist.domain.Tag;
 import com.andrii.simplespringtodolist.domain.Todo;
 import com.andrii.simplespringtodolist.domain.User;
+import com.andrii.simplespringtodolist.exception.CustomEmptyDataException;
 import com.andrii.simplespringtodolist.repositories.TodoRepository;
 import com.andrii.simplespringtodolist.repositories.UserRepository;
 import com.andrii.simplespringtodolist.services.interfaces.ITagService;
@@ -54,7 +55,7 @@ public class TodoService implements ITodoService {
 
             return converter.todoToPojo(todo);
         } else {
-            return converter.todoToPojo(new Todo());
+            throw new CustomEmptyDataException("unable to get user for todo");
         }
     }
 
@@ -64,8 +65,9 @@ public class TodoService implements ITodoService {
         Optional<Todo> todoOptional = todoRepository.findById(id);
         if (todoOptional.isPresent()) {
             return converter.todoToPojo(todoOptional.get());
+        }else{
+            throw new NoSuchElementException("unable to get todo");
         }
-        return converter.todoToPojo(new Todo());
     }
 
     @Override
@@ -88,7 +90,7 @@ public class TodoService implements ITodoService {
 
             return converter.todoToPojo(target);
         } else {
-            return converter.todoToPojo(new Todo());
+            throw new NoSuchElementException("unable to update todo");
         }
     }
 
@@ -102,14 +104,19 @@ public class TodoService implements ITodoService {
             new ArrayList<>(todoForDelete.getTagList()).forEach(tag -> tag.removeTodo(todoForDelete));
             todoRepository.delete(todoForDelete);
             return "Todo with id:" + id + " was successfully removed";
+        }else {
+            throw new NoSuchElementException("unable to delete todo");
         }
-        return "Todo with id:" + id + " was not found";
     }
 
     @Override
     @Transactional
     public List<TodoPojo> getAllTodos(Long userId) {
         Optional<User> userOptional = userRepository.findById(userId);
-        return userOptional.map(user -> todoRepository.findAllByUser(user).stream().map(converter::todoToPojo).collect(Collectors.toList())).orElseGet(ArrayList::new);
+        if(userOptional.isPresent()) {
+            return userOptional.map(user -> todoRepository.findAllByUser(user).stream().map(converter::todoToPojo).collect(Collectors.toList())).orElseGet(ArrayList::new);
+        }else {
+            throw new NoSuchElementException("No user with id" + userId + "was found");
+        }
     }
 }
